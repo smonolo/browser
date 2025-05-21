@@ -1,3 +1,4 @@
+import os
 from url import URL
 
 
@@ -19,4 +20,10 @@ def load(url: URL):
 
 if __name__ == "__main__":
   import sys
-  load(URL(sys.argv[1]))
+
+  if len(sys.argv) < 2:
+    url = "file://" + os.path.abspath(sys.argv[0])
+  else:
+    url = sys.argv[1]
+
+  load(URL(url))
