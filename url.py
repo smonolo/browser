@@ -23,6 +23,7 @@ def get_port_from_scheme(scheme: str):
 
 class URL:
     def __init__(self, url: str):
+        self.socket = None
         self.scheme, url = get_scheme_and_url(url)
         self.view_source = False
 
@@ -58,19 +59,21 @@ class URL:
         if self.scheme == "data":
             return self.path
 
-        s = socket.socket()
+        if self.socket:
+            s = self.socket
+        else:
+            s = socket.socket()
+            s.connect((self.host, self.port))
 
-        s.connect((self.host, self.port))
-
-        if self.scheme == "https":
-            ctx = ssl.create_default_context()
-            s = ctx.wrap_socket(s, server_hostname=self.host)
+            if self.scheme == "https":
+                ctx = ssl.create_default_context()
+                s = ctx.wrap_socket(s, server_hostname=self.host)
 
         request = "GET {} HTTP/1.0\r\n".format(self.path)
         request_headers = {
-            "Host": self.host,
-            "Connection": "close",
-            "User-Agent": "smonolo-browser",
+            "host": self.host,
+            "connection": "keep-alive",
+            "user-agent": "smonolo-browser",
         }
 
         for key, value in request_headers.items():
@@ -96,9 +99,14 @@ class URL:
         assert "transfer-encoding" not in response_headers
         assert "content-encoding" not in response_headers
 
-        content = response.read()
+        content_length = response_headers["content-length"]
 
-        s.close()
+        if content_length:
+            content = response.read(int(content_length))
+        else:
+            content = response.read()
+
+        self.socket = s
 
         if self.view_source:
             content = content.replace("<", "&lt;").replace(">", "&gt;")
