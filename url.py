@@ -4,18 +4,21 @@ import ssl
 
 class URL:
     def __init__(self, url: str):
-        if "://" not in url:
-            self.scheme, data = url.split(":", 1)
-
-            assert self.scheme in ["data"]
-
-            self.data = data.split(",", 1)[1]
-
-            return
-
-        self.scheme, url = url.split("://", 1)
+        colon_schemes = ["data", "view-source"]
+        sep = ":" if any(url.startswith(scheme + ":") for scheme in colon_schemes) else "://"
         
-        assert self.scheme in ["http", "https", "file"]
+        self.scheme, url = url.split(sep, 1)
+        schemes = ["http", "https", "file"]
+        
+        assert self.scheme in [*schemes, *colon_schemes]
+
+        if self.scheme == "view-source":
+            self.view_source = True
+            self.scheme, url = url.split("://", 1)
+
+            assert self.scheme in schemes
+        else:
+            self.view_source = False
 
         if self.scheme == "http":
             self.port = 80
@@ -23,6 +26,9 @@ class URL:
             self.port = 443
         elif self.scheme == "file":
             self.path = url
+            return
+        elif self.scheme == "data":
+            self.path = url.split(",", 1)[1]
             return
 
         if "/" not in url:
@@ -39,7 +45,7 @@ class URL:
         if self.scheme == "file":
             return open(self.path, "r").read()
         elif self.scheme == "data":
-            return self.data
+            return self.path
 
         s = socket.socket(
             family=socket.AF_INET,
@@ -86,5 +92,8 @@ class URL:
         content = response.read()
 
         s.close()
+
+        if self.view_source:
+            content = content.replace("<", "&lt;").replace(">", "&gt;")
 
         return content

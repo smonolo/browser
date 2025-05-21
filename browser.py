@@ -4,20 +4,19 @@ from url import URL
 
 def show(body: str):
   in_tag = False
-  char_map = {
-    "&lt;": "<",
-    "&gt;": ">",
-  }
+  result = ""
 
   for c in body:
     if c == "<":
       in_tag = True
     elif c == ">":
       in_tag = False
-    elif c in char_map:
-      print(char_map[c], end="")
     elif not in_tag:
-      print(c, end="")
+      result += c
+
+  result = result.replace("&lt;", "<").replace("&gt;", ">")
+
+  print(result)
 
 def load(url: URL):
   body = url.request()
