@@ -2,14 +2,24 @@ import socket
 import ssl
 
 
+port_schemes = ["http", "https"]
+
 def get_scheme_and_url(url: str):
     colon_schemes = ["data", "view-source"]
     sep = ":" if any(url.startswith(scheme + ":") for scheme in colon_schemes) else "://"
     scheme, url = url.split(sep, 1)
 
-    assert scheme in ["http", "https", "file", *colon_schemes]
+    assert scheme in [*port_schemes, "file", *colon_schemes]
 
     return scheme, url
+
+def get_port_from_scheme(scheme: str):
+    ports = {
+        "http": 80,
+        "https": 443,
+    }
+
+    return ports[scheme]
 
 class URL:
     def __init__(self, url: str):
@@ -20,16 +30,16 @@ class URL:
             self.scheme, url = get_scheme_and_url(url)
             self.view_source = True
 
-        if self.scheme == "http":
-            self.port = 80
-        elif self.scheme == "https":
-            self.port = 443
-        elif self.scheme == "file":
+        if self.scheme == "file":
             self.path = url
             return
-        elif self.scheme == "data":
+        
+        if self.scheme == "data":
             self.path = url.split(",", 1)[1]
             return
+
+        if self.scheme in port_schemes:
+            self.port = get_port_from_scheme(self.scheme)
 
         if "/" not in url:
             url = url + "/"
@@ -44,14 +54,11 @@ class URL:
     def request(self):
         if self.scheme == "file":
             return open(self.path, "r").read()
-        elif self.scheme == "data":
+        
+        if self.scheme == "data":
             return self.path
 
-        s = socket.socket(
-            family=socket.AF_INET,
-            type=socket.SOCK_STREAM,
-            proto=socket.IPPROTO_TCP,
-        )
+        s = socket.socket()
 
         s.connect((self.host, self.port))
 
