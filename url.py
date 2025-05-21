@@ -88,7 +88,7 @@ class URL:
 
         response = s.makefile("rb", encoding="utf8", newline="\r\n")
         statusline = response.readline().decode("utf8")
-        version, status, explanation = statusline.split(" ", 2)
+        status = statusline.split(" ", 2)[1]
         response_headers = {}
 
         while True:
