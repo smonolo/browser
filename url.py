@@ -2,23 +2,23 @@ import socket
 import ssl
 
 
+def get_scheme_and_url(url: str):
+    colon_schemes = ["data", "view-source"]
+    sep = ":" if any(url.startswith(scheme + ":") for scheme in colon_schemes) else "://"
+    scheme, url = url.split(sep, 1)
+
+    assert scheme in ["http", "https", "file", *colon_schemes]
+
+    return scheme, url
+
 class URL:
     def __init__(self, url: str):
-        colon_schemes = ["data", "view-source"]
-        sep = ":" if any(url.startswith(scheme + ":") for scheme in colon_schemes) else "://"
-        
-        self.scheme, url = url.split(sep, 1)
-        schemes = ["http", "https", "file"]
-        
-        assert self.scheme in [*schemes, *colon_schemes]
+        self.scheme, url = get_scheme_and_url(url)
+        self.view_source = False
 
         if self.scheme == "view-source":
+            self.scheme, url = get_scheme_and_url(url)
             self.view_source = True
-            self.scheme, url = url.split("://", 1)
-
-            assert self.scheme in schemes
-        else:
-            self.view_source = False
 
         if self.scheme == "http":
             self.port = 80
