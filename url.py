@@ -2,14 +2,17 @@ import socket
 import ssl
 
 
-port_schemes = ["http", "https"]
+http_schemes = ["http", "https"]
+colon_schemes = ["data", "view-source"]
+
+def get_separator(url: str):
+    return ":" if any(url.startswith(scheme + ":") for scheme in colon_schemes) else "://"
 
 def get_scheme_and_url(url: str):
-    colon_schemes = ["data", "view-source"]
-    sep = ":" if any(url.startswith(scheme + ":") for scheme in colon_schemes) else "://"
+    sep = get_separator(url)
     scheme, url = url.split(sep, 1)
 
-    assert scheme in [*port_schemes, "file", *colon_schemes]
+    assert scheme in [*http_schemes, "file", *colon_schemes]
 
     return scheme, url
 
@@ -39,7 +42,7 @@ class URL:
             self.path = url.split(",", 1)[1]
             return
 
-        if self.scheme in port_schemes:
+        if self.scheme in http_schemes:
             self.port = get_port_from_scheme(self.scheme)
 
         if "/" not in url:
@@ -83,13 +86,13 @@ class URL:
 
         s.send(request.encode("utf8"))
 
-        response = s.makefile("r", encoding="utf8", newline="\r\n")
-        statusline = response.readline()
+        response = s.makefile("rb", encoding="utf8", newline="\r\n")
+        statusline = response.readline().decode("utf8")
         version, status, explanation = statusline.split(" ", 2)
         response_headers = {}
 
         while True:
-            line = response.readline()
+            line = response.readline().decode("utf8")
             
             if line == "\r\n": break
 
@@ -99,14 +102,21 @@ class URL:
         assert "transfer-encoding" not in response_headers
         assert "content-encoding" not in response_headers
 
-        content_length = response_headers["content-length"]
+        if int(status) >= 300 and int(status) < 400:
+            location = response_headers["location"]
+            
+            if not any(location.startswith(scheme + ":") for scheme in http_schemes):
+                location = self.scheme + get_separator(location) + self.host + location
 
-        if content_length:
-            content = response.read(int(content_length))
+            return URL(location).request()
+
+        if "content-length" in response_headers:
+            content = response.read(int(response_headers["content-length"]))
         else:
             content = response.read()
 
         self.socket = s
+        content = content.decode("utf8")
 
         if self.view_source:
             content = content.replace("<", "&lt;").replace(">", "&gt;")
