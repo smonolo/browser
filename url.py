@@ -2,19 +2,24 @@ import socket
 import ssl
 
 
-http_schemes = ["http", "https"]
-colon_schemes = ["data", "view-source"]
+HTTP_SCHEMES = ["http", "https"]
+COLON_SCHEMES = ["data", "view-source"]
+
 
 def get_separator(url: str):
-    return ":" if any(url.startswith(scheme + ":") for scheme in colon_schemes) else "://"
+    return (
+        ":" if any(url.startswith(scheme + ":") for scheme in COLON_SCHEMES) else "://"
+    )
+
 
 def get_scheme_and_url(url: str):
     sep = get_separator(url)
     scheme, url = url.split(sep, 1)
 
-    assert scheme in [*http_schemes, "file", *colon_schemes]
+    assert scheme in [*HTTP_SCHEMES, "file", *COLON_SCHEMES]
 
     return scheme, url
+
 
 def get_port_from_scheme(scheme: str):
     ports = {
@@ -23,6 +28,7 @@ def get_port_from_scheme(scheme: str):
     }
 
     return ports[scheme]
+
 
 class URL:
     def __init__(self, url: str):
@@ -37,17 +43,17 @@ class URL:
         if self.scheme == "file":
             self.path = url
             return
-        
+
         if self.scheme == "data":
             self.path = url.split(",", 1)[1]
             return
 
-        if self.scheme in http_schemes:
+        if self.scheme in HTTP_SCHEMES:
             self.port = get_port_from_scheme(self.scheme)
 
         if "/" not in url:
             url = url + "/"
-          
+
         self.host, url = url.split("/", 1)
         self.path = "/" + url
 
@@ -58,7 +64,7 @@ class URL:
     def request(self):
         if self.scheme == "file":
             return open(self.path, "r").read()
-        
+
         if self.scheme == "data":
             return self.path
 
@@ -93,8 +99,9 @@ class URL:
 
         while True:
             line = response.readline().decode("utf8")
-            
-            if line == "\r\n": break
+
+            if line == "\r\n":
+                break
 
             header, value = line.split(":", 1)
             response_headers[header.casefold()] = value.strip()
@@ -104,8 +111,8 @@ class URL:
 
         if int(status) >= 300 and int(status) < 400:
             location = response_headers["location"]
-            
-            if not any(location.startswith(scheme + ":") for scheme in http_schemes):
+
+            if not any(location.startswith(scheme + ":") for scheme in HTTP_SCHEMES):
                 location = self.scheme + get_separator(location) + self.host + location
 
             return URL(location).request()
