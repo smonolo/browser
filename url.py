@@ -4,6 +4,15 @@ import ssl
 
 class URL:
     def __init__(self, url: str):
+        if "://" not in url:
+            self.scheme, data = url.split(":", 1)
+
+            assert self.scheme in ["data"]
+
+            self.data = data.split(",", 1)[1]
+
+            return
+
         self.scheme, url = url.split("://", 1)
         
         assert self.scheme in ["http", "https", "file"]
@@ -29,6 +38,8 @@ class URL:
     def request(self):
         if self.scheme == "file":
             return open(self.path, "r").read()
+        elif self.scheme == "data":
+            return self.data
 
         s = socket.socket(
             family=socket.AF_INET,
@@ -43,7 +54,6 @@ class URL:
             s = ctx.wrap_socket(s, server_hostname=self.host)
 
         request = "GET {} HTTP/1.0\r\n".format(self.path)
-
         request_headers = {
             "Host": self.host,
             "Connection": "close",
