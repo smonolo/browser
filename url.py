@@ -5,6 +5,7 @@ import ssl
 class URL:
     def __init__(self, url: str):
         self.scheme, url = url.split("://", 1)
+        
         assert self.scheme in ["http", "https"]
 
         if self.scheme == "http":
@@ -36,7 +37,14 @@ class URL:
             s = ctx.wrap_socket(s, server_hostname=self.host)
 
         request = "GET {} HTTP/1.0\r\n".format(self.path)
-        request += "Host: {}\r\n".format(self.host)
+        request_headers = {}
+        request_headers["Host"] = self.host
+        request_headers["Connection"] = "close"
+        request_headers["User-Agent"] = "smonolo-browser"
+
+        for key, value in request_headers.items():
+            request += "{}: {}\r\n".format(key, value)
+
         request += "\r\n"
 
         s.send(request.encode("utf8"))
