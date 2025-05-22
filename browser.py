@@ -50,6 +50,7 @@ class Browser:
         self.scroll = 0
         self.window.bind("<Down>", self.scroll_down)
         self.window.bind("<Up>", self.scroll_up)
+        self.window.bind("<MouseWheel>", self.scroll_wheel)
 
     def load(self, url: URL):
         body = url.request()
@@ -73,8 +74,15 @@ class Browser:
         self.draw()
 
     def scroll_up(self, _):
-        self.scroll -= SCROLL_STEP
-        self.draw()
+        if self.scroll >= SCROLL_STEP:
+            self.scroll -= SCROLL_STEP
+            self.draw()
+
+    def scroll_wheel(self, event):
+        if event.delta > 0:
+            self.scroll_up(None)
+        else:
+            self.scroll_down(None)
 
 
 if __name__ == "__main__":
