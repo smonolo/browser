@@ -4,43 +4,14 @@ import tkinter.font
 
 from constants import WIDTH, HEIGHT, VSTEP, SCROLL_STEP, SCROLLBAR_WIDTH
 from render.layout import Layout
-from render.tag import Tag
-from render.text import Text
+from render.parser import HTMLParser
 from url import URL
 
 
-def replace_entities(text: str):
-    return text.replace("&lt;", "<").replace("&gt;", ">")
-
-
-def lex(body: str) -> list[Text | Tag]:
-    out = []
-
-    if not len(body):
-        return out
-
-    buffer = ""
-    in_tag = False
-
-    for c in body:
-        if c == "<":
-            in_tag = True
-
-            if buffer:
-                out.append(Text(replace_entities(buffer)))
-
-            buffer = ""
-        elif c == ">":
-            in_tag = False
-            out.append(Tag(replace_entities(buffer)))
-            buffer = ""
-        else:
-            buffer += c
-
-    if not in_tag and buffer:
-        out.append(Text(replace_entities(buffer)))
-
-    return out
+def print_tree(node, indent=0):
+    print(" " * indent, node)
+    for child in node.children:
+        print_tree(child, indent + 2)
 
 
 class Browser:
@@ -56,8 +27,8 @@ class Browser:
 
     def load(self, url: URL):
         body = url.request()
-        tokens = lex(body)
-        self.display_list = Layout(tokens).display_list
+        self.nodes = HTMLParser(body).parse()
+        self.display_list = Layout(self.nodes).display_list
         self.draw()
 
     def draw(self):

@@ -1,7 +1,7 @@
 import tkinter.font
 
 from constants import HSTEP, SCROLLBAR_WIDTH, VSTEP, WIDTH
-from render.tag import Tag
+from render.element import Element
 from render.text import Text
 
 
@@ -20,7 +20,7 @@ def get_font(size: int, weight: str, style: str) -> tkinter.font.Font:
 
 
 class Layout:
-    def __init__(self, tokens: list[Text | Tag]):
+    def __init__(self, tree: Element):
         self.display_list = []
         self.cursor_x = HSTEP
         self.cursor_y = VSTEP
@@ -29,36 +29,45 @@ class Layout:
         self.size = 16
         self.line = []
 
-        for tok in tokens:
-            self.token(tok)
-
+        self.recurse(tree)
         self.flush()
 
-    def token(self, tok: Text | Tag):
-        if isinstance(tok, Text):
-            for word in tok.text.split():
-                self.word(word)
-        elif tok.tag == "i":
+    def open_tag(self, tag: str):
+        if tag == "i":
             self.style = "italic"
-        elif tok.tag == "/i":
-            self.style = "roman"
-        elif tok.tag == "b":
+        elif tag == "b":
             self.weight = "bold"
-        elif tok.tag == "/b":
-            self.weight = "normal"
-        elif tok.tag == "small":
+        elif tag == "small":
             self.size -= 2
-        elif tok.tag == "/small":
-            self.size += 2
-        elif tok.tag == "big":
+        elif tag == "big":
             self.size += 4
-        elif tok.tag == "/big":
-            self.size -= 4
-        elif tok.tag == "br":
+        elif tag == "br":
             self.flush()
-        elif tok.tag == "/p":
+
+    def close_tag(self, tag: str):
+        if tag == "/i":
+            self.style = "roman"
+        elif tag == "/b":
+            self.weight = "normal"
+        elif tag == "/small":
+            self.size += 2
+        elif tag == "/big":
+            self.size -= 4
+        elif tag == "/p":
             self.flush()
             self.cursor_y += VSTEP
+
+    def recurse(self, tree: Element):
+        if isinstance(tree, Text):
+            for word in tree.text.split():
+                self.word(word)
+        else:
+            self.open_tag(tree.tag)
+
+            for child in tree.children:
+                self.recurse(child)
+
+            self.close_tag(tree.tag)
 
     def word(self, word: str):
         font = get_font(self.size, self.weight, self.style)
