@@ -2,7 +2,7 @@ import os
 import tkinter
 import tkinter.font
 
-from constants import WIDTH, HEIGHT, HSTEP, VSTEP, SCROLL_STEP, SCROLLBAR_WIDTH
+from constants import WIDTH, HEIGHT, VSTEP, SCROLL_STEP, SCROLLBAR_WIDTH
 from render.layout import Layout
 from render.tag import Tag
 from render.text import Text
@@ -13,11 +13,12 @@ def replace_entities(text: str):
     return text.replace("&lt;", "<").replace("&gt;", ">")
 
 
-def lex(body: str):
-    if not len(body):
-        return ""
-
+def lex(body: str) -> list[Text | Tag]:
     out = []
+
+    if not len(body):
+        return out
+
     buffer = ""
     in_tag = False
 
@@ -68,7 +69,7 @@ class Browser:
             if y + VSTEP < self.scroll:
                 continue
 
-            self.canvas.create_text(x, y - self.scroll, text=c, font=f)
+            self.canvas.create_text(x, y - self.scroll, text=c, font=f, anchor="nw")
 
         if len(self.display_list):
             self.draw_scrollbar()
@@ -85,12 +86,12 @@ class Browser:
             outline="white",
         )
 
-    def scroll_down(self, _):
+    def scroll_down(self, event: tkinter.Event):
         if self.scroll + SCROLL_STEP < self.display_list[-1][1]:
             self.scroll += SCROLL_STEP
             self.draw()
 
-    def scroll_up(self, _):
+    def scroll_up(self, event: tkinter.Event):
         if self.scroll >= SCROLL_STEP:
             self.scroll -= SCROLL_STEP
             self.draw()
