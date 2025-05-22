@@ -1,49 +1,45 @@
 import os
 import tkinter
+import tkinter.font
 
+from constants import WIDTH, HEIGHT, HSTEP, VSTEP, SCROLL_STEP, SCROLLBAR_WIDTH
+from render.layout import Layout
+from render.tag import Tag
+from render.text import Text
 from url import URL
 
 
-WIDTH, HEIGHT = 800, 600
-HSTEP, VSTEP = 13, 18
-SCROLL_STEP = 100
-SCROLLBAR_WIDTH = HSTEP
+def replace_entities(text: str):
+    return text.replace("&lt;", "<").replace("&gt;", ">")
 
 
 def lex(body: str):
-    text = ""
-
     if not len(body):
-        return text
+        return ""
 
+    out = []
+    buffer = ""
     in_tag = False
 
     for c in body:
         if c == "<":
             in_tag = True
+
+            if buffer:
+                out.append(Text(replace_entities(buffer)))
+
+            buffer = ""
         elif c == ">":
             in_tag = False
-        elif not in_tag:
-            text += c
+            out.append(Tag(replace_entities(buffer)))
+            buffer = ""
+        else:
+            buffer += c
 
-    text = text.replace("&lt;", "<").replace("&gt;", ">")
+    if not in_tag and buffer:
+        out.append(Text(replace_entities(buffer)))
 
-    return text
-
-
-def layout(text: str):
-    display_list = []
-    cursor_x, cursor_y = HSTEP, VSTEP
-
-    for c in text:
-        display_list.append((cursor_x, cursor_y, c))
-        cursor_x += HSTEP
-
-        if cursor_x >= WIDTH - SCROLLBAR_WIDTH:
-            cursor_y += VSTEP
-            cursor_x = HSTEP
-
-    return display_list
+    return out
 
 
 class Browser:
@@ -59,20 +55,20 @@ class Browser:
 
     def load(self, url: URL):
         body = url.request()
-        text = lex(body)
-        self.display_list = layout(text)
+        tokens = lex(body)
+        self.display_list = Layout(tokens).display_list
         self.draw()
 
     def draw(self):
         self.canvas.delete("all")
 
-        for x, y, c in self.display_list:
+        for x, y, c, f in self.display_list:
             if y > self.scroll + HEIGHT:
                 continue
             if y + VSTEP < self.scroll:
                 continue
 
-            self.canvas.create_text(x, y - self.scroll, text=c)
+            self.canvas.create_text(x, y - self.scroll, text=c, font=f)
 
         if len(self.display_list):
             self.draw_scrollbar()
@@ -116,9 +112,11 @@ if __name__ == "__main__":
 
     browser = Browser()
 
-    try:
-        browser.load(URL(url))
-    except Exception as e:
-        browser.load(URL("about:blank"))
+    # try:
+    #     browser.load(URL(url))
+    # except Exception as e:
+    #     browser.load(URL("about:blank"))
+
+    browser.load(URL(url))
 
     tkinter.mainloop()
