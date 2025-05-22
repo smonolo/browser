@@ -11,8 +11,12 @@ SCROLLBAR_WIDTH = 10
 
 
 def lex(body: str):
-    in_tag = False
     text = ""
+
+    if not len(body):
+        return text
+
+    in_tag = False
 
     for c in body:
         if c == "<":
@@ -70,7 +74,8 @@ class Browser:
 
             self.canvas.create_text(x, y - self.scroll, text=c)
 
-        self.draw_scrollbar()
+        if len(self.display_list):
+            self.draw_scrollbar()
 
     def draw_scrollbar(self):
         last_y = self.display_list[-1][1]
@@ -107,5 +112,11 @@ if __name__ == "__main__":
     else:
         url = sys.argv[1]
 
-    Browser().load(URL(url))
+    browser = Browser()
+
+    try:
+        browser.load(URL(url))
+    except Exception as e:
+        browser.load(URL("about:blank"))
+
     tkinter.mainloop()

@@ -3,7 +3,7 @@ import ssl
 
 
 HTTP_SCHEMES = ["http", "https"]
-COLON_SCHEMES = ["data", "view-source"]
+COLON_SCHEMES = ["data", "view-source", "about"]
 
 
 def get_separator(url: str):
@@ -36,6 +36,9 @@ class URL:
         self.scheme, url = get_scheme_and_url(url)
         self.view_source = False
 
+        if self.scheme == "about":
+            return
+
         if self.scheme == "view-source":
             self.scheme, url = get_scheme_and_url(url)
             self.view_source = True
@@ -62,6 +65,9 @@ class URL:
             self.port = int(port)
 
     def request(self):
+        if self.scheme == "about":
+            return ""
+
         if self.scheme == "file":
             return open(self.path, "r").read()
 
