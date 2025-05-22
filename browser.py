@@ -7,7 +7,7 @@ from url import URL
 WIDTH, HEIGHT = 800, 600
 HSTEP, VSTEP = 13, 18
 SCROLL_STEP = 100
-SCROLLBAR_WIDTH = 10
+SCROLLBAR_WIDTH = HSTEP
 
 
 def lex(body: str):
@@ -39,7 +39,7 @@ def layout(text: str):
         display_list.append((cursor_x, cursor_y, c))
         cursor_x += HSTEP
 
-        if cursor_x >= WIDTH - HSTEP:
+        if cursor_x >= WIDTH - SCROLLBAR_WIDTH:
             cursor_y += VSTEP
             cursor_x = HSTEP
 
@@ -85,6 +85,8 @@ class Browser:
             (self.scroll * HEIGHT) / last_y,
             WIDTH,
             (self.scroll * HEIGHT) / last_y + (HEIGHT * HEIGHT) / last_y,
+            fill="black",
+            outline="white",
         )
 
     def scroll_down(self, _):
