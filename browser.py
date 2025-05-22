@@ -7,6 +7,7 @@ from url import URL
 WIDTH, HEIGHT = 800, 600
 HSTEP, VSTEP = 13, 18
 SCROLL_STEP = 100
+SCROLLBAR_WIDTH = 10
 
 
 def lex(body: str):
@@ -69,16 +70,29 @@ class Browser:
 
             self.canvas.create_text(x, y - self.scroll, text=c)
 
+        self.draw_scrollbar()
+
+    def draw_scrollbar(self):
+        last_y = self.display_list[-1][1]
+
+        self.canvas.create_rectangle(
+            WIDTH - SCROLLBAR_WIDTH,
+            (self.scroll * HEIGHT) / last_y,
+            WIDTH,
+            (self.scroll * HEIGHT) / last_y + (HEIGHT * HEIGHT) / last_y,
+        )
+
     def scroll_down(self, _):
-        self.scroll += SCROLL_STEP
-        self.draw()
+        if self.scroll + SCROLL_STEP < self.display_list[-1][1]:
+            self.scroll += SCROLL_STEP
+            self.draw()
 
     def scroll_up(self, _):
         if self.scroll >= SCROLL_STEP:
             self.scroll -= SCROLL_STEP
             self.draw()
 
-    def scroll_wheel(self, event):
+    def scroll_wheel(self, event: tkinter.Event):
         if event.delta > 0:
             self.scroll_up(None)
         else:
